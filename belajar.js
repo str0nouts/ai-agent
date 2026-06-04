@@ -39,3 +39,27 @@ console.log("Scheduler aktif. Pipeline akan jalan setiap hari jam 08:00.");
 
 // Untuk testing — jalankan sekali sekarang tanpa nunggu jam 8
 jalankanPipeline();
+
+// Fungsi retry — coba maksimal 3 kali kalau gagal
+async function callGeminiWithRetry(model, prompt, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result;
+    } catch (err) {
+      console.log(`Percobaan ${i + 1} gagal: ${err.message}`);
+      if (i < maxRetries - 1) {
+        console.log("Tunggu 10 detik, coba lagi...");
+        await new Promise(r => setTimeout(r, 10000));
+      }
+    }
+  }
+  throw new Error("Gemini gagal setelah 3 percobaan");
+}
+
+// Ganti baris ini:
+// const result = await model.generateContent(...)
+// Jadi:
+const result = await callGeminiWithRetry(model,
+  `Ini headline crypto hari ini:\n${headlines}\n\nBuat summary singkat dalam Bahasa Indonesia, apa yang perlu diperhatikan investor hari ini.`
+);
